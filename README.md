@@ -14,10 +14,9 @@
 > paid enterprise paths (Vertex AI, Gemini Enterprise, Gemini Code Assist
 > Standard/Enterprise) are expected to keep working after that date.
 >
-> **This fork is frozen at `0.42.0-termux` (last upstream stable before the
-> scheduled EOL) and will not be updated further.** No more upstream tracking,
-> no more releases. The repository stays as an Apache-2.0 working archive for
-> study and reference.
+> **This fork is evolving!** While the upstream Google AI free tier is
+> approaching EOL, this fork is adding support for alternative providers like
+> **NVIDIA API (DeepSeek)** to ensure continued functionality.
 >
 > _Per aspera ad astra._
 
@@ -89,7 +88,7 @@ bash scripts/check-termux-patches.sh
 
 ## Authentication
 
-Termux supports the same user-facing auth paths as upstream Gemini CLI.
+Termux supports the same user-facing auth paths as upstream Gemini CLI, plus NVIDIA API.
 
 Interactive auth:
 
@@ -103,7 +102,31 @@ API-key auth:
 export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 ```
 
+NVIDIA API (DeepSeek) auth:
+
+```bash
+export NVIDIA_API_KEY="nvapi-your-key-here"
+```
+
 When a browser URL must be opened on Android, the fork uses `termux-open-url`.
+
+## NVIDIA API & DeepSeek Support
+
+This fork now supports the NVIDIA API (OpenAI-compatible endpoint) for accessing high-performance models like DeepSeek v4.
+
+### Usage
+
+1. **Set your key:** `export NVIDIA_API_KEY="nvapi-..."`
+2. **Run with DeepSeek:**
+```bash
+gemini --model "deepseek-ai/deepseek-v4-flash"
+```
+
+### Key Features
+- **DeepSeek Integration:** Full support for `deepseek-ai/deepseek-v4-flash` and `deepseek-ai/deepseek-v4-pro`.
+- **Automatic Routing:** The CLI automatically switches to NVIDIA authentication when a DeepSeek model is requested.
+- **Tool Use (Function Calling):** DeepSeek models can see your workspace, read/write files, and run shell commands just like Gemini!
+- **Reasoning Content:** Displays "Thinking..." blocks when using DeepSeek's reasoning capabilities.
 
 ## Build
 
