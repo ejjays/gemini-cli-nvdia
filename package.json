@@ -11,7 +11,7 @@
   "private": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DioNanos/gemini-cli-termux.git"
+    "url": "git+https://github.com/ejjays/gemini-cli-nvdia.git"
   },
   "config": {
     "sandboxImageUri": "ghcr.io/mmmbuto/gemini-cli-termux:0.42.0-termux"
