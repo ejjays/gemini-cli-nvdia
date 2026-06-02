@@ -1,5 +1,5 @@
 {
-  "name": "@mmmbuto/gemini-cli-termux",
+  "name": "gemini-cli-nvidia",
   "version": "0.42.0-termux",
   "engines": {
     "node": ">=20.0.0"
