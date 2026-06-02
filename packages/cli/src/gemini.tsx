@@ -435,28 +435,24 @@ export async function main() {
   let initialAuthFailed = false;
   if (!settings.merged.security.auth.useExternal && !argv.isCommand) {
     try {
-      if (
-        partialConfig.isInteractive() &&
-        settings.merged.security.auth.selectedType
-      ) {
-        const err = validateAuthMethod(
-          settings.merged.security.auth.selectedType,
-        );
+      const authType =
+        partialConfig.getAuthType() || settings.merged.security.auth.selectedType;
+
+      if (partialConfig.isInteractive() && authType) {
+        const err = validateAuthMethod(authType);
         if (err) {
           throw new Error(err);
         }
 
-        await partialConfig.refreshAuth(
-          settings.merged.security.auth.selectedType,
-        );
+        await partialConfig.refreshAuth(authType);
       } else if (!partialConfig.isInteractive()) {
-        const authType = await validateNonInteractiveAuth(
-          settings.merged.security.auth.selectedType,
+        const validatedAuthType = await validateNonInteractiveAuth(
+          authType,
           settings.merged.security.auth.useExternal,
           partialConfig,
           settings,
         );
-        await partialConfig.refreshAuth(authType);
+        await partialConfig.refreshAuth(validatedAuthType);
       }
     } catch (err) {
       if (err instanceof ValidationCancelledError) {

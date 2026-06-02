@@ -746,6 +746,7 @@ export interface ConfigParameters {
     overageStrategy?: OverageStrategy;
   };
   vertexAiRouting?: VertexAiRoutingConfig;
+  authType?: AuthType;
 }
 
 export class Config implements McpContext, AgentLoopContext {
@@ -1412,6 +1413,9 @@ export class Config implements McpContext, AgentLoopContext {
     this._geminiClient = new GeminiClient(this);
     this.a2aClientManager = new A2AClientManager(this);
     this.modelRouterService = new ModelRouterService(this);
+    this.contentGeneratorConfig = {
+      authType: params.authType,
+    };
   }
 
   get config(): Config {
@@ -1538,6 +1542,10 @@ export class Config implements McpContext, AgentLoopContext {
 
   getContentGenerator(): ContentGenerator {
     return this.contentGenerator;
+  }
+
+  getAuthType(): AuthType | undefined {
+    return this.contentGeneratorConfig?.authType;
   }
 
   async refreshAuth(

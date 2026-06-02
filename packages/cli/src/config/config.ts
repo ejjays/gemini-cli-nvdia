@@ -49,6 +49,8 @@ import {
   type HookEventName,
   type OutputFormat,
   detectIdeFromEnv,
+  AuthType,
+  getAuthTypeFromEnv,
 } from '@google/gemini-cli-core';
 import {
   type Settings,
@@ -869,6 +871,13 @@ export async function loadCliConfig(
     specifiedModel === GEMINI_MODEL_ALIAS_AUTO
       ? defaultModel
       : specifiedModel || defaultModel;
+
+  const isNvidiaModel = resolvedModel?.startsWith('deepseek-ai/');
+  const authType =
+    process.env['NVIDIA_API_KEY'] && isNvidiaModel
+      ? AuthType.NVIDIA_API
+      : getAuthTypeFromEnv();
+
   const sandboxConfig = await loadSandboxConfig(settings, argv);
   if (sandboxConfig) {
     const existingPaths = sandboxConfig.allowedPaths || [];
@@ -1045,6 +1054,7 @@ export async function loadCliConfig(
     fileDiscoveryService: fileService,
     bugCommand: settings.advanced?.bugCommand,
     model: resolvedModel,
+    authType,
     maxSessionTurns: settings.model?.maxSessionTurns,
 
     listExtensions: argv.listExtensions || false,

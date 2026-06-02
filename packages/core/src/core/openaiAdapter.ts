@@ -128,7 +128,7 @@ export class OpenAIAdapter implements ContentGenerator {
           openaiTools.push({
             type: 'function',
             function: {
-              name: fd.name,
+              name: fd.name as string,
               description: fd.description,
               parameters: fd.parameters as any,
             },
@@ -152,16 +152,17 @@ export class OpenAIAdapter implements ContentGenerator {
     if (choice?.message?.tool_calls) {
       for (const tc of choice.message.tool_calls) {
         try {
-          const args = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
+          const tcFunc = (tc as any).function;
+          const args = tcFunc.arguments ? JSON.parse(tcFunc.arguments) : {};
           const fnCall: FunctionCall = {
-            name: tc.function.name,
+            name: tcFunc.name,
             args,
           };
           (fnCall as any).id = tc.id;
           functionCalls.push(fnCall);
           parts.push({ functionCall: fnCall });
         } catch (e) {
-          debugLogger.error('[OpenAIAdapter] Failed to parse tool call arguments:', tc.function.arguments);
+          debugLogger.error('[OpenAIAdapter] Failed to parse tool call arguments:', (tc as any).function?.arguments);
         }
       }
     }
@@ -171,8 +172,8 @@ export class OpenAIAdapter implements ContentGenerator {
         role: 'model',
         parts,
       },
-      finishReason: choice?.finish_reason === 'stop' ? 'STOP' : 
-                    choice?.finish_reason === 'tool_calls' ? 'STOP' : 'OTHER',
+      finishReason: (choice?.finish_reason === 'stop' ? 'STOP' : 
+                    choice?.finish_reason === 'tool_calls' ? 'STOP' : 'OTHER') as any,
       index: 0,
     };
 
@@ -184,7 +185,8 @@ export class OpenAIAdapter implements ContentGenerator {
         candidatesTokenCount: response.usage?.completion_tokens || 0,
         totalTokenCount: response.usage?.total_tokens || 0,
       },
-    };
+      text,
+    } as any as GenerateContentResponse;
   }
 
   async generateContent(
@@ -192,8 +194,11 @@ export class OpenAIAdapter implements ContentGenerator {
     _userPromptId: string,
     _role: LlmRole,
   ): Promise<GenerateContentResponse> {
-    const messages = this.convertGoogleToOpenAI(request.contents, request.config?.systemInstruction);
-    const tools = this.convertTools(request.tools || request.config?.tools);
+    const messages = this.convertGoogleToOpenAI(
+      Array.isArray(request.contents) ? request.contents : [request.contents as any],
+      request.config?.systemInstruction as any
+    );
+    const tools = this.convertTools((request as any).tools || request.config?.tools);
     
     debugLogger.debug('[OpenAIAdapter] generateContent request:', { model: request.model, messageCount: messages.length, hasTools: !!tools });
 
@@ -201,111 +206,119 @@ export class OpenAIAdapter implements ContentGenerator {
       model: request.model,
       messages,
       tools,
-      temperature: request.generationConfig?.temperature,
-      max_tokens: request.generationConfig?.maxOutputTokens,
-      top_p: request.generationConfig?.topP,
+      temperature: request.config?.temperature,
+      max_tokens: request.config?.maxOutputTokens,
+      top_p: request.config?.topP,
     });
 
     return this.convertOpenAIToGoogle(response);
   }
 
-  async *generateContentStream(
+  async generateContentStream(
     request: GenerateContentParameters,
     _userPromptId: string,
     _role: LlmRole,
-  ): AsyncGenerator<GenerateContentResponse> {
-    const messages = this.convertGoogleToOpenAI(request.contents, request.config?.systemInstruction);
-    const tools = this.convertTools(request.tools || request.config?.tools);
-    
-    debugLogger.debug('[OpenAIAdapter] generateContentStream request:', { model: request.model, messageCount: messages.length, hasTools: !!tools });
-
-    const stream = await this.client.chat.completions.create({
-      model: request.model,
-      messages,
-      tools,
-      temperature: request.generationConfig?.temperature,
-      max_tokens: request.generationConfig?.maxOutputTokens,
-      top_p: request.generationConfig?.topP,
-      stream: true,
-    });
-
-    let toolCallsBuffer: any[] = [];
-
-    for await (const chunk of stream) {
-      const choice = chunk.choices[0];
-      if (!choice) continue;
-
-      const delta = choice.delta;
-      const text = delta?.content || '';
-      const reasoning = (delta as any)?.reasoning_content || '';
-      const finishReason = choice.finish_reason;
+  ): Promise<AsyncGenerator<GenerateContentResponse>> {
+    const self = this;
+    async function* generator() {
+      const messages = self.convertGoogleToOpenAI(
+        Array.isArray(request.contents) ? request.contents : [request.contents as any],
+        request.config?.systemInstruction as any
+      );
+      const tools = self.convertTools((request as any).tools || request.config?.tools);
       
-      if (delta?.tool_calls) {
-        for (const tc of delta.tool_calls) {
-          if (!toolCallsBuffer[tc.index]) {
-            toolCallsBuffer[tc.index] = {
-              id: tc.id,
-              function: { name: '', arguments: '' }
-            };
-          }
-          if (tc.id) toolCallsBuffer[tc.index].id = tc.id;
-          if (tc.function?.name) toolCallsBuffer[tc.index].function.name += tc.function.name;
-          if (tc.function?.arguments) toolCallsBuffer[tc.index].function.arguments += tc.function.arguments;
-        }
-      }
+      debugLogger.debug('[OpenAIAdapter] generateContentStream request:', { model: request.model, messageCount: messages.length, hasTools: !!tools });
 
-      const hasContent = text.length > 0 || reasoning.length > 0;
-      const isFinished = !!finishReason;
-      
-      if (!hasContent && !isFinished && !delta?.tool_calls) continue;
-      
-      const parts: Part[] = [];
-      if (reasoning) {
-        parts.push({ text: reasoning, thought: true } as any);
-      }
-      if (text) {
-        parts.push({ text });
-      }
-      
-      let functionCalls: FunctionCall[] | undefined = undefined;
+      const stream = await self.client.chat.completions.create({
+        model: request.model,
+        messages,
+        tools,
+        temperature: request.config?.temperature,
+        max_tokens: request.config?.maxOutputTokens,
+        top_p: request.config?.topP,
+        stream: true,
+      });
 
-      if (isFinished && toolCallsBuffer.length > 0) {
-        functionCalls = [];
-        for (const tc of toolCallsBuffer) {
-          if (tc && tc.function.name) {
-            try {
-              const fnCall: FunctionCall = {
-                name: tc.function.name,
-                args: JSON.parse(tc.function.arguments.trim() || '{}'),
+      let toolCallsBuffer: any[] = [];
+
+      for await (const chunk of stream) {
+        const choice = chunk.choices[0];
+        if (!choice) continue;
+
+        const delta = choice.delta;
+        const text = delta?.content || '';
+        const reasoning = (delta as any)?.reasoning_content || '';
+        const finishReason = choice.finish_reason;
+        
+        if (delta?.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            if (!toolCallsBuffer[tc.index]) {
+              toolCallsBuffer[tc.index] = {
+                id: tc.id,
+                function: { name: '', arguments: '' }
               };
-              (fnCall as any).id = tc.id;
-              functionCalls.push(fnCall);
-              parts.push({ functionCall: fnCall });
-              debugLogger.debug('[OpenAIAdapter] Assembled function call:', tc.function.name);
-            } catch (e) {
-              debugLogger.error('[OpenAIAdapter] Failed to parse tool call arguments:', tc.function.arguments);
+            }
+            if (tc.id) toolCallsBuffer[tc.index].id = tc.id;
+            if (tc.function?.name) toolCallsBuffer[tc.index].function.name += tc.function.name;
+            if (tc.function?.arguments) toolCallsBuffer[tc.index].function.arguments += tc.function.arguments;
+          }
+        }
+
+        const hasContent = text.length > 0 || reasoning.length > 0;
+        const isFinished = !!finishReason;
+        
+        if (!hasContent && !isFinished && !delta?.tool_calls) continue;
+        
+        const parts: Part[] = [];
+        if (reasoning) {
+          parts.push({ text: reasoning, thought: true } as any);
+        }
+        if (text) {
+          parts.push({ text });
+        }
+        
+        let functionCalls: FunctionCall[] | undefined = undefined;
+
+        if (isFinished && toolCallsBuffer.length > 0) {
+          functionCalls = [];
+          for (const tc of toolCallsBuffer) {
+            if (tc && tc.function.name) {
+              try {
+                const fnCall: FunctionCall = {
+                  name: tc.function.name,
+                  args: JSON.parse(tc.function.arguments.trim() || '{}'),
+                };
+                (fnCall as any).id = tc.id;
+                functionCalls.push(fnCall);
+                parts.push({ functionCall: fnCall });
+                debugLogger.debug('[OpenAIAdapter] Assembled function call:', tc.function.name);
+              } catch (e) {
+                debugLogger.error('[OpenAIAdapter] Failed to parse tool call arguments:', tc.function.arguments);
+              }
             }
           }
+          toolCallsBuffer = []; 
         }
-        toolCallsBuffer = []; 
+
+        // If we have nothing to yield and not finished, wait for more chunks
+        if (parts.length === 0 && !isFinished && !functionCalls) continue;
+
+        yield {
+          candidates: [{
+            content: {
+              role: 'model',
+              parts,
+            },
+            ...(isFinished ? { finishReason: (finishReason === 'stop' ? 'STOP' : 
+                                 finishReason === 'tool_calls' ? 'STOP' : 'OTHER') as any } : {}),
+            index: 0,
+          }],
+          functionCalls,
+          text: parts.filter(p => 'text' in p).map(p => (p as any).text).join(''),
+        } as any as GenerateContentResponse;
       }
-
-      // If we have nothing to yield and not finished, wait for more chunks
-      if (parts.length === 0 && !isFinished && !functionCalls) continue;
-
-      yield {
-        candidates: [{
-          content: {
-            role: 'model',
-            parts,
-          },
-          ...(isFinished ? { finishReason: finishReason === 'stop' ? 'STOP' : 
-                               finishReason === 'tool_calls' ? 'STOP' : 'OTHER' } : {}),
-          index: 0,
-        }],
-        functionCalls,
-      };
     }
+    return generator();
   }
 
   async countTokens(_request: CountTokensParameters): Promise<CountTokensResponse> {
