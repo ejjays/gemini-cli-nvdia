@@ -25,12 +25,24 @@ if ! command -v npm &> /dev/null; then
 fi
 
 echo -e "📦 ${BOLD}Fetching and installing packages...${NC}"
-echo "This might take a moment depending on your connection."
+echo "This might take a moment as we build the project from source."
 
-# Perform global installation
-if npm install -g --force https://github.com/ejjays/gemini-cli-nvdia.git; then
-    echo -e "\n${GREEN}✅ Success! Gemini CLI NVIDIA has been installed.${NC}"
-    echo -e "🚀 Run ${BOLD}'gemini-nvidia'${NC} from any directory to get started."
+# Perform global installation with foreground-scripts to bypass allow-scripts blocks
+if npm install -g --force --foreground-scripts https://github.com/ejjays/gemini-cli-nvdia.git; then
+    # Detect if the command is available
+    if command -v gemini-nvidia &> /dev/null; then
+        echo -e "\n${GREEN}✅ Success! Gemini CLI NVIDIA has been installed.${NC}"
+        echo -e "🚀 Run ${BOLD}'gemini-nvidia'${NC} from any directory to get started."
+    else
+        NPM_BIN=$(npm config get prefix)/bin
+        echo -e "\n${GREEN}✅ Installation finished, but there's a PATH issue.${NC}"
+        echo -e "⚠️  The command ${BOLD}'gemini-nvidia'${NC} was installed to: ${BLUE}$NPM_BIN${NC}"
+        echo "It seems this directory is not in your system PATH."
+        echo -e "\n${BOLD}To fix this, run these two commands:${NC}"
+        echo -e "1. echo 'export PATH=\"\$PATH:$NPM_BIN\"' >> ~/.bashrc"
+        echo -e "2. source ~/.bashrc"
+        echo -e "\nThen you can run ${BOLD}'gemini-nvidia'${NC}!"
+    fi
 else
     echo -e "\n${RED}❌ Installation failed.${NC}"
     echo "Try running with sudo if you encounter permission errors:"

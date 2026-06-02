@@ -83,7 +83,7 @@
     "cross-spawn": "^7.0.6"
   },
   "bin": {
-    "gemini-nvidia": "bundle/gemini.js"
+    "gemini-nvidia": "packages/cli/dist/index.js"
   },
   "files": [
     "bundle/",
