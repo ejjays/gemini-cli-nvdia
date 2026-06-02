@@ -856,7 +856,12 @@ export async function loadCliConfig(
     interactive,
   );
 
-  const defaultModel = PREVIEW_GEMINI_MODEL_AUTO;
+  const defaultModel =
+    process.env['NVIDIA_API_KEY'] &&
+    (argv.model === undefined || argv.model === GEMINI_MODEL_ALIAS_AUTO)
+      ? DEEPSEEK_V4_PRO
+      : PREVIEW_GEMINI_MODEL_AUTO;
+
   const rawModel =
     argv.model || process.env['GEMINI_MODEL'] || settings.model?.name;
 

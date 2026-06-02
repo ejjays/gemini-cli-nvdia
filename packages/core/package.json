@@ -12,7 +12,7 @@
   "main": "dist/index.js",
   "scripts": {
     "bundle:browser-mcp": "node scripts/bundle-browser-mcp.mjs",
-    "build": "node ../../scripts/build_package.js",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" node ../../scripts/build_package.js",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
     "test": "vitest run",

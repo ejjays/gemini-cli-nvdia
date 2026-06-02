@@ -15,7 +15,7 @@
     "gemini-nvidia": "dist/index.js"
   },
   "scripts": {
-    "build": "node ../../scripts/build_package.js",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" node ../../scripts/build_package.js",
     "start": "node dist/index.js",
     "debug": "node --inspect-brk dist/index.js",
     "lint": "eslint . --ext .ts,.tsx",
