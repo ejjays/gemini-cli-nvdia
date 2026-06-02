@@ -28,7 +28,7 @@ echo -e "📦 ${BOLD}Fetching and installing packages...${NC}"
 echo "This might take a moment depending on your connection."
 
 # Perform global installation
-if npm install -g https://github.com/ejjays/gemini-cli-nvdia.git; then
+if npm install -g --force https://github.com/ejjays/gemini-cli-nvdia.git; then
     echo -e "\n${GREEN}✅ Success! Gemini CLI NVIDIA has been installed.${NC}"
     echo -e "🚀 Run ${BOLD}'gemini-nvidia'${NC} from any directory to get started."
 else
