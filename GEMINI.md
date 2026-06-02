@@ -94,3 +94,15 @@ powerful tool for developers.
 - Documentation is located in the `docs/` directory.
 - Suggest documentation updates when code changes render existing documentation
   obsolete or incomplete.
+
+## Architectural Decisions & Fixes
+
+### Authentication & Model Initialization (June 2026)
+
+To resolve issues where the CLI incorrectly defaulted to Gemini models and triggered redundant access prompts when using NVIDIA/DeepSeek models, the following architectural changes were implemented:
+
+- **Explicit Auth Propagation:** The `authType` is now explicitly determined during the initial configuration phase in `loadCliConfig` and passed to the `Config` constructor. This prevents the system from defaulting to `USE_GEMINI` before the user's intended authentication (e.g., `NVIDIA_API`) is applied.
+- **Config Lifecycle:** The `Config` class now supports an initial `authType` in its `ConfigParameters`, ensuring that `contentGeneratorConfig` is correctly initialized immediately. This avoids race conditions and incorrect quota checks during the `refreshAuth` cycle.
+- **Unified Auth Resolution:** The main CLI entry point (`gemini.tsx`) now leverages `config.getAuthType()` to use the pre-resolved authentication state, simplifying the startup flow and ensuring consistency across interactive and non-interactive modes.
+- **OpenAI Adapter Compatibility:** The `OpenAIAdapter` was updated to be strictly compatible with the class-based `GenerateContentResponse` from the latest `@google/genai` package, resolving numerous TypeScript compilation errors.
+

@@ -26,3 +26,9 @@
   inspecting them) to ensure the render and colors actually look as expected and
   don't just contain an error message.
 - **Mocks**: Use mocks as sparingly as possible.
+
+## Key Implementation Notes
+
+- **Initial Auth Resolution:** `loadCliConfig` (`src/config/config.ts`) is responsible for resolving the initial `authType`. It checks if the requested model is an NVIDIA model (e.g., `deepseek-ai/*`) and if an `NVIDIA_API_KEY` is present to set `AuthType.NVIDIA_API`. This value is then passed to the `Config` constructor.
+- **Startup Auth Flow:** The `main` function in `gemini.tsx` uses `partialConfig.getAuthType()` to drive the initial authentication refresh. This ensures that the correct authentication type is used from the very beginning of the application lifecycle, avoiding incorrect model resets.
+

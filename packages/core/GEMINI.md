@@ -45,3 +45,9 @@ execution, and agent management.
 - Run tests: `npm test -w @google/gemini-cli-core`
 - Run a specific test:
   `npm test -w @google/gemini-cli-core -- src/path/to/file.test.ts`
+
+## Key Implementation Notes
+
+- **Config Auth State:** The `Config` class (`src/config/config.ts`) now accepts an optional `authType` in `ConfigParameters`. This value is used to initialize `contentGeneratorConfig` in the constructor. Use `config.getAuthType()` to retrieve the currently active authentication method.
+- **OpenAI Adapter Compatibility:** The `OpenAIAdapter` (`src/core/openaiAdapter.ts`) is designed to work with the `@google/genai` response types. It uses structural emulation and `any` casts where necessary to satisfy the class-based requirements of `GenerateContentResponse` while maintaining compatibility with the OpenAI-compatible NVIDIA API.
+
