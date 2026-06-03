@@ -395,7 +395,7 @@ export const defaultKeyBindingConfig: KeyBindingConfig = new Map([
   [Command.CYCLE_APPROVAL_MODE, [new KeyBinding('shift+tab')]],
   [Command.SHOW_MORE_LINES, [new KeyBinding('ctrl+o')]],
   [Command.EXPAND_PASTE, [new KeyBinding('ctrl+o')]],
-  [Command.FOCUS_SHELL_INPUT, [new KeyBinding('tab'), new KeyBinding('ctrl+shift+b')]],
+  [Command.FOCUS_SHELL_INPUT, [new KeyBinding('tab'), new KeyBinding('alt+s')]],
   [Command.UNFOCUS_SHELL_INPUT, [new KeyBinding('shift+tab')]],
   [Command.CLEAR_SCREEN, [new KeyBinding('ctrl+l')]],
   [Command.RESTART_APP, [new KeyBinding('r'), new KeyBinding('shift+r')]],
