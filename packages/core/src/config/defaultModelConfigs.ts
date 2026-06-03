@@ -102,6 +102,18 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         model: 'gemma-4-26b-a4b-it',
       },
     },
+    'deepseek-ai/deepseek-v4-flash': {
+      extends: 'chat-base-3',
+      modelConfig: {
+        model: 'deepseek-ai/deepseek-v4-flash',
+      },
+    },
+    'deepseek-ai/deepseek-v4-pro': {
+      extends: 'chat-base-3',
+      modelConfig: {
+        model: 'deepseek-ai/deepseek-v4-pro',
+      },
+    },
 
     // Bases for the internal model configs.
     'gemini-2.5-flash-base': {

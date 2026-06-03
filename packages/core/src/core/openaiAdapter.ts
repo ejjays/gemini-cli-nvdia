@@ -139,12 +139,22 @@ export class OpenAIAdapter implements ContentGenerator {
     return openaiTools.length > 0 ? openaiTools : undefined;
   }
 
-  private convertOpenAIToGoogle(response: OpenAI.Chat.ChatCompletion): GenerateContentResponse {
+  private convertOpenAIToGoogle(
+    response: OpenAI.Chat.ChatCompletion,
+    thinkingConfig?: { thinkingBudget?: number; includeThoughts?: boolean },
+  ): GenerateContentResponse {
     const choice = response.choices[0];
     const text = choice?.message?.content || '';
+    const reasoning = (choice?.message as any)?.reasoning_content || '';
     const parts: Part[] = [];
     const functionCalls: FunctionCall[] = [];
     
+    const isThinkingEnabled = thinkingConfig?.includeThoughts ||
+      (typeof thinkingConfig?.thinkingBudget === 'number' && thinkingConfig.thinkingBudget > 0);
+
+    if (reasoning && isThinkingEnabled) {
+      parts.push({ text: reasoning, thought: true } as any);
+    }
     if (text) {
       parts.push({ text });
     }
@@ -202,6 +212,16 @@ export class OpenAIAdapter implements ContentGenerator {
     
     debugLogger.debug('[OpenAIAdapter] generateContent request:', { model: request.model, messageCount: messages.length, hasTools: !!tools });
 
+    const thinkingConfig = request.config?.thinkingConfig as
+      | { thinkingBudget?: number; thinkingLevel?: string; includeThoughts?: boolean }
+      | undefined;
+    const reasoningEffort =
+      thinkingConfig?.thinkingBudget && thinkingConfig.thinkingBudget > 0
+        ? 'high'
+        : thinkingConfig?.includeThoughts
+          ? 'high'
+          : undefined;
+
     const response = await this.client.chat.completions.create({
       model: request.model,
       messages,
@@ -209,9 +229,10 @@ export class OpenAIAdapter implements ContentGenerator {
       temperature: request.config?.temperature,
       max_tokens: request.config?.maxOutputTokens,
       top_p: request.config?.topP,
+      ...(reasoningEffort ? { reasoning_effort: reasoningEffort as 'high' | 'medium' | 'low' } : {}),
     });
 
-    return this.convertOpenAIToGoogle(response);
+    return this.convertOpenAIToGoogle(response, request.config?.thinkingConfig as any);
   }
 
   async generateContentStream(
@@ -226,8 +247,18 @@ export class OpenAIAdapter implements ContentGenerator {
         request.config?.systemInstruction as any
       );
       const tools = self.convertTools((request as any).tools || request.config?.tools);
-      
+
       debugLogger.debug('[OpenAIAdapter] generateContentStream request:', { model: request.model, messageCount: messages.length, hasTools: !!tools });
+
+      const tc = request.config?.thinkingConfig as
+        | { thinkingBudget?: number; thinkingLevel?: string; includeThoughts?: boolean }
+        | undefined;
+      const reasoningEffort =
+        tc?.thinkingBudget && tc.thinkingBudget > 0
+          ? 'high'
+          : tc?.includeThoughts
+            ? 'high'
+            : undefined;
 
       const stream = await self.client.chat.completions.create({
         model: request.model,
@@ -236,6 +267,7 @@ export class OpenAIAdapter implements ContentGenerator {
         temperature: request.config?.temperature,
         max_tokens: request.config?.maxOutputTokens,
         top_p: request.config?.topP,
+        ...(reasoningEffort ? { reasoning_effort: reasoningEffort as 'high' | 'medium' | 'low' } : {}),
         stream: true,
       });
 
