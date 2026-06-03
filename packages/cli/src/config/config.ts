@@ -34,6 +34,7 @@ import {
   type HierarchicalMemory,
   coreEvents,
   GEMINI_MODEL_ALIAS_AUTO,
+  DEEPSEEK_V4_PRO,
   getAdminErrorMessage,
   isHeadlessMode,
   Config,
